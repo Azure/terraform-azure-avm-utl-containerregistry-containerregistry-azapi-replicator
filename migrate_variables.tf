@@ -1,2 +1,0 @@
-# New variables only
-

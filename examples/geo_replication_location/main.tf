@@ -60,6 +60,7 @@ resource "azapi_resource" "this" {
 resource "azapi_resource" "post_creation" {
   for_each = module.replicator.post_creation0 != null ? { for idx, item in module.replicator.post_creation0 : idx => item } : {}
 
+  location       = each.value.azapi_header.location
   name           = each.value.azapi_header.name
   parent_id      = azapi_resource.this.id
   type           = each.value.azapi_header.type
