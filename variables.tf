@@ -153,7 +153,7 @@ EOT
     error_message = "Each georeplication location must be a valid Azure region name."
   }
   validation {
-    condition = var.georeplications == null || var.georeplications == [] || !contains([
+    condition = var.georeplications == null || length(var.georeplications) == 0 || !contains([
       for repl in var.georeplications :
       replace(lower(repl.location), " ", "")
     ], replace(lower(var.location), " ", ""))

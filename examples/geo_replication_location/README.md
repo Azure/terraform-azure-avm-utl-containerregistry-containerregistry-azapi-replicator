@@ -20,7 +20,7 @@ module "replicator" {
   name              = "testacccr${random_integer.number.result}"
   resource_group_id = azurerm_resource_group.test.id
   sku               = "Premium"
-  enable_telemetry  = false
+  enable_telemetry  = var.enable_telemetry
   georeplications = [
     {
       location = "westus"
