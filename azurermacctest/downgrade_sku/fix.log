@@ -1,0 +1,21 @@
+Test Case: downgrade_sku
+================================================================================
+
+Initial Error:
+Error: Attempt to get attribute from null value
+  on azapi.tf line 52, in resource "azapi_resource" "post_creation0":
+  52:   type           = module.replicator.post_creation0.azapi_header.type
+    ├────────────────
+    │ module.replicator.post_creation0 is null
+This value is null, so it does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The post_creation0 resource is trying to access attributes of module.replicator.post_creation0 which is null for Basic SKU configurations. The resource needs to be conditionally created only when post_creation0 is not null.
+- Fix Method: Add count parameter to azapi_resource.post_creation0 to conditionally create it only when module.replicator.post_creation0 is not null.
+- Changes Made: Added "count = module.replicator.post_creation0 != null ? 1 : 0" to the azapi_resource.post_creation0 resource block in azapi.tf
+- Result: Success
+
+Final Result: Fix successful
+

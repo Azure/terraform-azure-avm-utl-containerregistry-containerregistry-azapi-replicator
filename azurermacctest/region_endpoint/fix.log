@@ -1,0 +1,36 @@
+Test Case: region_endpoint
+================================================================================
+
+Initial Error:
+Error: Unsupported attribute
+  on azapi.tf line 55, in resource "azapi_resource" "post_creation0":
+  55:   type           = module.replicator.post_creation0.azapi_header.type
+    ├────────────────
+    │ module.replicator.post_creation0 is tuple with 1 element
+This value does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: post_creation0 is a tuple/list with 1 element, not an object. Need to access the first element with [0] index.
+- Fix Method: Add [0] index to all post_creation0 references and add missing location attribute
+- Changes Made: 
+  * Changed module.replicator.post_creation0.azapi_header.type to module.replicator.post_creation0[0].azapi_header.type
+  * Changed module.replicator.post_creation0.azapi_header.name to module.replicator.post_creation0[0].azapi_header.name
+  * Added location = module.replicator.post_creation0[0].azapi_header.location
+  * Changed module.replicator.post_creation0.body to module.replicator.post_creation0[0].body
+  * Changed module.replicator.post_creation0.locks to module.replicator.post_creation0[0].locks
+- Result: Success - terraform plan runs, but apply failed with "Resource already exists"
+
+Attempt 2:
+- Problem Analysis: The geo-replication resource was created as part of azurerm_container_registry but not tracked in state. When switching to AzAPI, it needs to be imported into the post_creation0 resource.
+- Fix Method: Add import block to moved.tf to import the existing replication resource
+- Changes Made: Added import block to moved.tf:
+  import {
+    id = "/subscriptions/.../replications/westus"
+    to = azapi_resource.post_creation0
+  }
+- Result: Success - apply completed successfully, second plan shows no changes, resource comparison shows only timestamp differences (which are insignificant)
+
+Final Result: Fix successful
+

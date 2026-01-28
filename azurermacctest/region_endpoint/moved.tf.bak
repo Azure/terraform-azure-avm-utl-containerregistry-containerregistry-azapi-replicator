@@ -1,0 +1,9 @@
+moved {
+  from = azurerm_container_registry.test
+  to   = azapi_resource.this
+}
+
+import {
+  id = "/subscriptions/f7a632a5-49db-4c5e-9828-cd62cb753971/resourceGroups/acctestRG-acr-274489/providers/Microsoft.ContainerRegistry/registries/testacccr274489/replications/westus"
+  to = azapi_resource.post_creation0
+}

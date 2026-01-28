@@ -1,0 +1,42 @@
+Test Case: geo_replication_multiple_locations
+================================================================================
+
+Step 2: Baseline Validation Failed - Configuration Drift Detected
+
+Failed Command: terraform plan -input=false
+
+Error Description:
+After successful terraform apply, the subsequent terraform plan showed configuration drift in the georeplications block. The locations were swapping between "westus" and "centralus".
+
+Terraform Plan Output:
+```
+# azurerm_container_registry.test will be updated in-place
+~ resource "azurerm_container_registry" "test" {
+    id                            = "/subscriptions/f7a632a5-49db-4c5e-9828-cd62cb753971/resourceGroups/acctestRG-acr-777116/providers/Microsoft.ContainerRegistry/registries/testacccr777116"
+    name                          = "testacccr777116"
+    tags                          = {}
+    # (19 unchanged attributes hidden)
+
+  ~ georeplications {
+      ~ location                  = "centralus" -> "westus"
+        tags                      = {}
+        # (2 unchanged attributes hidden)
+    }
+  ~ georeplications {
+      ~ location                  = "westus" -> "centralus"
+        tags                      = {}
+        # (2 unchanged attributes hidden)
+    }
+}
+```
+
+Root Cause Analysis:
+This appears to be an ordering issue with the georeplications block in the AzureRM provider. The provider is not maintaining the order of georeplications as specified in the configuration, causing the locations to swap between plan executions. This indicates that the georeplications block is order-sensitive in state but the provider is returning them in a different order than configured.
+
+This drift is NOT acceptable according to acceptable_drift_patterns.md because:
+1. The georeplications locations were explicitly set in azurerm.tf
+2. The values should not change between apply and subsequent plan
+3. This pattern does not match any of the acceptable drift patterns listed
+
+Conclusion:
+The baseline AzureRM configuration itself has an idempotency issue with multiple georeplications. This is not a migration issue but rather an issue with the AzureRM provider's handling of multiple georeplications blocks. The test case is marked as INVALID because the baseline configuration is not stable.

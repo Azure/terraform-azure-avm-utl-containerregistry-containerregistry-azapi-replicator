@@ -1,0 +1,61 @@
+Test Case: network_rule_bypass_options_premium_azure_services
+================================================================================
+
+Initial Error:
+Error: Attempt to get attribute from null value
+on azapi.tf line 46, in resource "azapi_resource" "post_creation0":
+46:   type           = module.replicator.post_creation0.azapi_header.type
+module.replicator.post_creation0 is null
+This value is null, so it does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: module.replicator.post_creation0 is null, but the code tries to access its attributes unconditionally. This resource should only be created when post_creation0 exists.
+- Fix Method: Add count conditional to only create post_creation0 resource when module.replicator.post_creation0 is not null
+- Changes Made: Adding count = module.replicator.post_creation0 != null ? 1 : 0 to azapi_resource.post_creation0
+
+- Result: Fix successful - post_creation0 error resolved
+
+Detected Drifts After Fix:
+1. ignore_null_property: false -> true
+2. locks: null -> []
+3. output: computed value changes
+4. replace_triggers_external_values: null -> populated
+5. sensitive_body_version: null -> {}
+6. type: @2025-11-01 -> @2025-04-01
+7. body.properties.anonymousPullEnabled: false -> null
+8. body.properties.dataEndpointEnabled: false -> null
+9. body.properties.encryption: {...} -> removed
+10. body.properties.networkRuleSet: {...} -> removed
+11. body.properties.policies: various subfields removed
+12. body.properties.roleAssignmentMode: "..." -> removed
+13. timeouts: null -> populated
+
+Evaluating Against acceptable_drift_patterns.md:
+
+Drift Analysis Complete:
+
+All drifts are ACCEPTABLE per acceptable_drift_patterns.md:
+
+Section 1 (AzAPI Resource-Level Attributes) - All acceptable:
+- ignore_null_property, locks, output, replace_triggers_external_values, sensitive_body_version, type, timeouts
+
+Section 2 (Body Structure - Computed Field Changes):
+- anonymousPullEnabled: false -> null (optional, omitted in azurerm.tf) ✅
+- dataEndpointEnabled: false -> null (optional, omitted in azurerm.tf) ✅
+- encryption: removed (optional+computed, omitted in azurerm.tf) ✅
+- networkRuleSet: removed (optional+computed, omitted in azurerm.tf) ✅
+- policies subfields: removed (optional, omitted in azurerm.tf) ✅
+- roleAssignmentMode: removed (not in AzureRM schema) ✅
+
+Proceeding with apply...
+
+Step 5 Results:
+- Fresh AzAPI deployment: SUCCESS
+- All resources created successfully
+- Idempotency verified: No drift detected
+- Cleanup: All resources destroyed successfully
+- Files restored to original state
+
+Final Result: Fix successful - Test completed with all steps passing

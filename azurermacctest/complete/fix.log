@@ -1,0 +1,62 @@
+Test Case: complete
+================================================================================
+
+Initial Error:
+Error: Attempt to get attribute from null value
+
+  on azapi.tf line 64, in resource "azapi_resource" "post_creation0":
+  64:   type           = module.replicator.post_creation0.azapi_header.type
+    ├────────────────
+    │ module.replicator.post_creation0 is null
+
+This value is null, so it does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The module.replicator.post_creation0 is null, meaning no credential regeneration resource is needed. The azapi.tf tries to access attributes on a null value.
+- Fix Method: Add a count condition to only create the post_creation0 resource when module.replicator.post_creation0 is not null
+- Changes Made: Add count = module.replicator.post_creation0 != null ? 1 : 0 to azapi_resource.post_creation0
+- Result: Fix successful - post_creation0 resource now skipped when null
+
+Drifts detected in terraform plan:
+1. ignore_null_property: false -> true (Always acceptable - AzAPI attribute)
+2. locks: null -> [] (Always acceptable - AzAPI attribute)
+3. output: computed (Always acceptable - AzAPI attribute)
+4. replace_triggers_external_values: null -> object (Always acceptable - AzAPI attribute)
+5. sensitive_body_version: null -> {} (Always acceptable - AzAPI attribute)
+6. type: Microsoft.ContainerRegistry/registries@2025-11-01 -> @2025-04-01 (Always acceptable - API version)
+7. timeouts: null -> object (Always acceptable - AzAPI attribute)
+8. body.properties.encryption: {status="disabled"} -> removed
+9. body.properties.networkRuleSet: {defaultAction="Allow", ipRules=[]} -> removed
+10. body.properties.policies.azureADAuthenticationAsArmPolicy: {status="enabled"} -> removed
+11. body.properties.policies.trustPolicy.type: "Notary" -> removed
+12. body.properties.roleAssignmentMode: "LegacyRegistryPermissions" -> removed
+13. identity.identity_ids: [] -> null (Identity related, need to verify)
+
+Verifying body property drifts against azurerm.tf:
+- encryption: NOT in azurerm.tf (Optional+Computed field)
+- networkRuleSet: NOT in azurerm.tf (network_rule_set not specified)
+- azureADAuthenticationAsArmPolicy: NOT in azurerm.tf (not an AzureRM provider field)
+- trustPolicy.type: NOT in azurerm.tf (only trust_policy_enabled is set)
+- roleAssignmentMode: NOT in azurerm.tf (not an AzureRM provider field)
+- identity_ids: NOT in azurerm.tf (only type="SystemAssigned" is set)
+
+All drifts are acceptable per acceptable_drift_patterns.md
+
+Final Result: Fix successful
+
+Summary:
+- Step 1: Cleanup completed
+- Step 2: AzureRM baseline verification passed
+- Step 3: State migration with moved blocks successful
+  * Fixed post_creation0 null error by adding count condition
+  * All drifts were acceptable per acceptable_drift_patterns.md
+  * Resource unchanged after migration (verified with Azure CLI)
+- Step 4: Cleanup after state migration successful
+- Step 5: Fresh AzAPI deployment successful
+  * Init, plan, apply all passed
+  * Idempotency verified
+  * Destroy and restore successful
+
+Test Status: test success

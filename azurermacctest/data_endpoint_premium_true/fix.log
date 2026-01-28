@@ -1,0 +1,26 @@
+Test Case: data_endpoint_premium_true
+================================================================================
+
+Initial Error:
+Error: Attempt to get attribute from null value
+  on azapi.tf line 47, in resource "azapi_resource" "post_creation0":
+  47:   type           = module.replicator.post_creation0.azapi_header.type
+     ├────────────────
+     │ module.replicator.post_creation0 is null
+This value is null, so it does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The module.replicator.post_creation0 is null (not needed for this configuration), but azapi.tf tries to use it unconditionally
+- Fix Method: Add count condition to check if post_creation0 is not null before creating the resource
+- Changes Made: Added 'count = module.replicator.post_creation0 != null ? 1 : 0' to resource "azapi_resource" "post_creation0"
+- Result: Testing...
+
+Attempt 1 Result: Fix successful - terraform plan now runs without errors
+
+The plan shows drift in body properties, but all drifts are acceptable:
+- AzAPI resource-level attributes (ignore_null_property, locks, output, replace_triggers_external_values, sensitive_body_version, type) - all acceptable
+- Body fields (anonymousPullEnabled, encryption, networkRuleSet, policies, roleAssignmentMode) - all were NOT set in azurerm.tf, so changes are acceptable per pattern #2
+
+Final Result: Fix successful

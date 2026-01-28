@@ -1,0 +1,20 @@
+Test Case: encryption_enabled
+================================================================================
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: azapi.tf contains 'resource_group_name' argument which is not expected by the replicator module. The module uses 'resource_group_id' instead.
+- Fix Method: Remove the unsupported 'resource_group_name' argument from module call
+- Changes Made: Removed line 6: resource_group_name = azurerm_resource_group.test.name
+- Result: Success - terraform plan completed without errors
+
+State Migration Analysis:
+- All detected drifts were acceptable per acceptable_drift_patterns.md:
+  - ignore_null_property, locks, replace_triggers_external_values, sensitive_body_version, output, type, timeouts: Section 1 (AzAPI Resource-Level Attribute Changes)
+  - anonymousPullEnabled, dataEndpointEnabled, networkRuleSet, policies changes: Section 2 (fields not explicitly set in azurerm.tf)
+- Apply succeeded
+- Idempotency verified (second plan showed no changes)
+- Resource unchanged verified (only timestamp differences in JSON comparison)
+
+Final Result: Fix successful
