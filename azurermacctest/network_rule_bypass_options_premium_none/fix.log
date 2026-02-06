@@ -1,0 +1,22 @@
+Test Case: network_rule_bypass_options_premium_none
+================================================================================
+
+Initial Error:
+Error: Attempt to get attribute from null value
+
+  on azapi.tf line 46, in resource "azapi_resource" "post_creation0":
+  46:   type           = module.replicator.post_creation0.azapi_header.type
+    ├────────────────
+    │ module.replicator.post_creation0 is null
+
+This value is null, so it does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The post_creation0 resource is trying to reference module.replicator.post_creation0 which is null because this test case doesn't require post-creation resources.
+- Fix Method: Add a conditional count to the post_creation0 resource to only create it when module.replicator.post_creation0 is not null.
+- Changes Made: Added "count = module.replicator.post_creation0 != null ? 1 : 0" to the azapi_resource.post_creation0 resource.
+- Result: Success. Plan now shows acceptable drifts only (all are AzAPI resource-level attributes or computed fields not explicitly set in azurerm.tf).
+
+Final Result: Fix successful

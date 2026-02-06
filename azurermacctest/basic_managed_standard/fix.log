@@ -1,0 +1,29 @@
+Test Case: basic_managed_standard
+================================================================================
+
+Initial Error:
+╷
+│ Error: Missing required argument
+│
+│   on azapi.tf line 1, in module "replicator":
+│    1: module "replicator" {
+│
+│ The argument "resource_group_id" is required, but no definition was found.
+╵
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The module "replicator" requires a resource_group_id parameter, but azapi.tf only provides resource_group_name. The module expects resource ID format instead of just the name.
+- Fix Method: Add resource_group_id parameter using azurerm_resource_group.test.id
+- Changes Made: Add line "resource_group_id = azurerm_resource_group.test.id" to the module call
+- Result: Partial success - plan now runs but shows errors about post_creation0 being null
+
+Attempt 2:
+- Problem Analysis: The module.replicator.post_creation0 output is null for this configuration (basic Standard SKU doesn't have georeplications). The azapi_resource.post_creation0 block should only be created when post_creation0 is not null.
+- Fix Method: Add conditional count to post_creation0 resource block
+- Changes Made: Add "count = module.replicator.post_creation0 != null ? 1 : 0" to the post_creation0 resource block
+- Result: Success - plan shows acceptable drifts only (ignore_null_property, locks, output, replace_triggers_external_values, sensitive_body_version, type, timeouts, and body fields that were not explicitly set in azurerm.tf)
+
+Final Result: Fix successful
+

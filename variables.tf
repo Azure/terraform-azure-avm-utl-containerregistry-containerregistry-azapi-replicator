@@ -1,92 +1,76 @@
 variable "location" {
   type        = string
-  description = "Azure region where the resource should be deployed."
+  description = "(Required) Specifies the supported Azure location where the resource exists. Changing this forces a new resource to be created."
   nullable    = false
 }
 
 variable "name" {
   type        = string
-  description = "The name of the this resource."
-
-  validation {
-    condition     = can(regex("TODO", var.name))
-    error_message = "The name must be TODO." # TODO remove the example below once complete:
-    #condition     = can(regex("^[a-z0-9]{5,50}$", var.name))
-    #error_message = "The name must be between 5 and 50 characters long and can only contain lowercase letters and numbers."
-  }
-}
-
-# This is required for most resource modules
-variable "resource_group_name" {
-  type        = string
-  description = "The resource group where the resources will be deployed."
-}
-
-# required AVM interfaces
-# remove only if not supported by the resource
-# tflint-ignore: terraform_unused_declarations
-variable "customer_managed_key" {
-  type = object({
-    key_vault_resource_id = string
-    key_name              = string
-    key_version           = optional(string, null)
-    user_assigned_identity = optional(object({
-      resource_id = string
-    }), null)
-  })
-  default     = null
-  description = <<DESCRIPTION
-A map describing customer-managed keys to associate with the resource. This includes the following properties:
-- `key_vault_resource_id` - The resource ID of the Key Vault where the key is stored.
-- `key_name` - The name of the key.
-- `key_version` - (Optional) The version of the key. If not specified, the latest version is used.
-- `user_assigned_identity` - (Optional) An object representing a user-assigned identity with the following properties:
-  - `resource_id` - The resource ID of the user-assigned identity.
-DESCRIPTION
-}
-
-variable "diagnostic_settings" {
-  type = map(object({
-    name                                     = optional(string, null)
-    log_categories                           = optional(set(string), [])
-    log_groups                               = optional(set(string), ["allLogs"])
-    metric_categories                        = optional(set(string), ["AllMetrics"])
-    log_analytics_destination_type           = optional(string, "Dedicated")
-    workspace_resource_id                    = optional(string, null)
-    storage_account_resource_id              = optional(string, null)
-    event_hub_authorization_rule_resource_id = optional(string, null)
-    event_hub_name                           = optional(string, null)
-    marketplace_partner_resource_id          = optional(string, null)
-  }))
-  default     = {}
-  description = <<DESCRIPTION
-A map of diagnostic settings to create on the Key Vault. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
-
-- `name` - (Optional) The name of the diagnostic setting. One will be generated if not set, however this will not be unique if you want to create multiple diagnostic setting resources.
-- `log_categories` - (Optional) A set of log categories to send to the log analytics workspace. Defaults to `[]`.
-- `log_groups` - (Optional) A set of log groups to send to the log analytics workspace. Defaults to `["allLogs"]`.
-- `metric_categories` - (Optional) A set of metric categories to send to the log analytics workspace. Defaults to `["AllMetrics"]`.
-- `log_analytics_destination_type` - (Optional) The destination type for the diagnostic setting. Possible values are `Dedicated` and `AzureDiagnostics`. Defaults to `Dedicated`.
-- `workspace_resource_id` - (Optional) The resource ID of the log analytics workspace to send logs and metrics to.
-- `storage_account_resource_id` - (Optional) The resource ID of the storage account to send logs and metrics to.
-- `event_hub_authorization_rule_resource_id` - (Optional) The resource ID of the event hub authorization rule to send logs and metrics to.
-- `event_hub_name` - (Optional) The name of the event hub. If none is specified, the default event hub will be selected.
-- `marketplace_partner_resource_id` - (Optional) The full ARM resource ID of the Marketplace resource to which you would like to send Diagnostic LogsLogs.
-DESCRIPTION
+  description = "(Required) Specifies the name of the Container Registry. Only Alphanumeric characters allowed. Changing this forces a new resource to be created."
   nullable    = false
 
   validation {
-    condition     = alltrue([for _, v in var.diagnostic_settings : contains(["Dedicated", "AzureDiagnostics"], v.log_analytics_destination_type)])
-    error_message = "Log analytics destination type must be one of: 'Dedicated', 'AzureDiagnostics'."
+    condition     = can(regex("^[a-zA-Z0-9]+$", var.name))
+    error_message = "alpha numeric characters only are allowed in 'name': ${var.name}"
   }
   validation {
-    condition = alltrue(
-      [
-        for _, v in var.diagnostic_settings :
-        v.workspace_resource_id != null || v.storage_account_resource_id != null || v.event_hub_authorization_rule_resource_id != null || v.marketplace_partner_resource_id != null
-      ]
-    )
-    error_message = "At least one of `workspace_resource_id`, `storage_account_resource_id`, `marketplace_partner_resource_id`, or `event_hub_authorization_rule_resource_id`, must be set."
+    condition     = length(var.name) >= 5
+    error_message = "'name' cannot be less than 5 characters: ${var.name}"
+  }
+  validation {
+    condition     = length(var.name) <= 50
+    error_message = "'name' cannot be longer than 50 characters: ${var.name} (${length(var.name)})"
+  }
+}
+
+variable "resource_group_id" {
+  type        = string
+  description = "(Required) The resource ID of the resource group in which to create the Container Registry. Changing this forces a new resource to be created."
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^/subscriptions/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/resourceGroups/[-\\w\\._\\(\\)]+[^\\.]$", var.resource_group_id))
+    error_message = "'resource_group_id' must be a valid resource group ID in the format: /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}. Resource group names can contain alphanumeric characters, periods, underscores, hyphens, and parentheses, cannot end with a period, and must be 1-90 characters long."
+  }
+}
+
+variable "sku" {
+  type        = string
+  description = "(Required) The SKU name of the container registry. Possible values are `Basic`, `Standard` and `Premium`."
+  nullable    = false
+
+  validation {
+    condition     = contains(["Basic", "Standard", "Premium"], var.sku)
+    error_message = "'sku' must be one of: Basic, Standard, Premium"
+  }
+}
+
+variable "admin_enabled" {
+  type        = bool
+  default     = false
+  description = "(Optional) Specifies whether the admin user is enabled. Defaults to `false`."
+  nullable    = false
+}
+
+variable "anonymous_pull_enabled" {
+  type        = bool
+  default     = null
+  description = "(Optional) Whether to allow anonymous (unauthenticated) pull access to this Container Registry. This is only supported on resources with the `Standard` or `Premium` SKU."
+
+  validation {
+    condition     = var.anonymous_pull_enabled == null || var.anonymous_pull_enabled == false || contains(["Standard", "Premium"], var.sku)
+    error_message = "`anonymous_pull_enabled` can only be applied when using the Standard/Premium Sku"
+  }
+}
+
+variable "data_endpoint_enabled" {
+  type        = bool
+  default     = null
+  description = "(Optional) Whether to enable dedicated data endpoints for this Container Registry? This is only supported on resources with the `Premium` SKU."
+
+  validation {
+    condition     = var.data_endpoint_enabled != true || var.sku == "Premium"
+    error_message = "`data_endpoint_enabled` can only be applied when using the Premium Sku"
   }
 }
 
@@ -101,137 +85,273 @@ DESCRIPTION
   nullable    = false
 }
 
-variable "lock" {
-  type = object({
-    kind = string
-    name = optional(string, null)
-  })
+variable "encryption" {
+  type = list(object({
+    identity_client_id = string
+    key_vault_key_id   = string
+  }))
   default     = null
-  description = <<DESCRIPTION
-Controls the Resource Lock configuration for this resource. The following properties can be specified:
-
-- `kind` - (Required) The type of lock. Possible values are `\"CanNotDelete\"` and `\"ReadOnly\"`.
-- `name` - (Optional) The name of the lock. If not specified, a name will be generated based on the `kind` value. Changing this forces the creation of a new resource.
-DESCRIPTION
+  description = <<-EOT
+ - `identity_client_id` - (Required) The client ID of the managed identity associated with the encryption key.
+ - `key_vault_key_id` - (Required) The ID of the Key Vault Key.
+EOT
 
   validation {
-    condition     = var.lock != null ? contains(["CanNotDelete", "ReadOnly"], var.lock.kind) : true
-    error_message = "The lock level must be one of: 'None', 'CanNotDelete', or 'ReadOnly'."
+    condition     = var.encryption == null || length(var.encryption) == 0 || var.sku == "Premium"
+    error_message = "an ACR encryption can only be applied when using the Premium Sku"
+  }
+  validation {
+    condition     = var.encryption == null || length(var.encryption) <= 1
+    error_message = "encryption block can have at most 1 item"
+  }
+  validation {
+    condition     = var.encryption == null || length(var.encryption) == 0 || can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", var.encryption[0].identity_client_id))
+    error_message = "identity_client_id must be a valid UUID"
+  }
+  validation {
+    condition     = var.encryption == null || length(var.encryption) == 0 || can(regex("^https://[a-zA-Z0-9-]+\\.vault(\\.[a-zA-Z0-9-]+)*\\.[a-z]{2,}(/[a-zA-Z0-9-]+){2,3}(/[a-fA-F0-9]{32})?$", var.encryption[0].key_vault_key_id))
+    error_message = "key_vault_key_id must be a valid Key Vault Key ID in the format: https://{vault-name}.vault.{dns-suffix}/keys/{key-name}/{version} where version is optional"
   }
 }
 
-# tflint-ignore: terraform_unused_declarations
-variable "managed_identities" {
-  type = object({
-    system_assigned            = optional(bool, false)
-    user_assigned_resource_ids = optional(set(string), [])
-  })
-  default     = {}
-  description = <<DESCRIPTION
-Controls the Managed Identity configuration on this resource. The following properties can be specified:
-
-- `system_assigned` - (Optional) Specifies if the System Assigned Managed Identity should be enabled.
-- `user_assigned_resource_ids` - (Optional) Specifies a list of User Assigned Managed Identity resource IDs to be assigned to this resource.
-DESCRIPTION
-  nullable    = false
-}
-
-variable "private_endpoints" {
-  type = map(object({
-    name = optional(string, null)
-    role_assignments = optional(map(object({
-      role_definition_id_or_name             = string
-      principal_id                           = string
-      description                            = optional(string, null)
-      skip_service_principal_aad_check       = optional(bool, false)
-      condition                              = optional(string, null)
-      condition_version                      = optional(string, null)
-      delegated_managed_identity_resource_id = optional(string, null)
-    })), {})
-    lock = optional(object({
-      kind = string
-      name = optional(string, null)
-    }), null)
-    tags                                    = optional(map(string), null)
-    subnet_resource_id                      = string
-    private_dns_zone_group_name             = optional(string, "default")
-    private_dns_zone_resource_ids           = optional(set(string), [])
-    application_security_group_associations = optional(map(string), {})
-    private_service_connection_name         = optional(string, null)
-    network_interface_name                  = optional(string, null)
-    location                                = optional(string, null)
-    resource_group_name                     = optional(string, null)
-    ip_configurations = optional(map(object({
-      name               = string
-      private_ip_address = string
-    })), {})
-  }))
-  default     = {}
-  description = <<DESCRIPTION
-A map of private endpoints to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
-
-- `name` - (Optional) The name of the private endpoint. One will be generated if not set.
-- `role_assignments` - (Optional) A map of role assignments to create on the private endpoint. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time. See `var.role_assignments` for more information.
-- `lock` - (Optional) The lock level to apply to the private endpoint. Default is `None`. Possible values are `None`, `CanNotDelete`, and `ReadOnly`.
-- `tags` - (Optional) A mapping of tags to assign to the private endpoint.
-- `subnet_resource_id` - The resource ID of the subnet to deploy the private endpoint in.
-- `private_dns_zone_group_name` - (Optional) The name of the private DNS zone group. One will be generated if not set.
-- `private_dns_zone_resource_ids` - (Optional) A set of resource IDs of private DNS zones to associate with the private endpoint. If not set, no zone groups will be created and the private endpoint will not be associated with any private DNS zones. DNS records must be managed external to this module.
-- `application_security_group_resource_ids` - (Optional) A map of resource IDs of application security groups to associate with the private endpoint. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
-- `private_service_connection_name` - (Optional) The name of the private service connection. One will be generated if not set.
-- `network_interface_name` - (Optional) The name of the network interface. One will be generated if not set.
-- `location` - (Optional) The Azure location where the resources will be deployed. Defaults to the location of the resource group.
-- `resource_group_name` - (Optional) The resource group where the resources will be deployed. Defaults to the resource group of this resource.
-- `ip_configurations` - (Optional) A map of IP configurations to create on the private endpoint. If not specified the platform will create one. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
-  - `name` - The name of the IP configuration.
-  - `private_ip_address` - The private IP address of the IP configuration.
-DESCRIPTION
-  nullable    = false
-}
-
-# This variable is used to determine if the private_dns_zone_group block should be included,
-# or if it is to be managed externally, e.g. using Azure Policy.
-# https://github.com/Azure/terraform-azurerm-avm-res-keyvault-vault/issues/32
-# Alternatively you can use AzAPI, which does not have this issue.
-variable "private_endpoints_manage_dns_zone_group" {
+variable "export_policy_enabled" {
   type        = bool
   default     = true
-  description = "Whether to manage private DNS zone groups with this module. If set to false, you must manage private DNS zone groups externally, e.g. using Azure Policy."
+  description = "(Optional) Boolean value that indicates whether export policy is enabled. Defaults to `true`. In order to set it to `false`, make sure the `public_network_access_enabled` is also set to `false`."
   nullable    = false
+
+  validation {
+    condition     = var.export_policy_enabled == true || var.sku == "Premium"
+    error_message = "an ACR export policy can only be disabled when using the Premium Sku. If you are downgrading from a Premium SKU please unset `export_policy_enabled` or set `export_policy_enabled = true`"
+  }
+  validation {
+    condition     = var.export_policy_enabled == true || var.public_network_access_enabled == false
+    error_message = "to disable export of artifacts, `public_network_access_enabled` must also be `false`"
+  }
 }
 
-variable "role_assignments" {
-  type = map(object({
-    role_definition_id_or_name             = string
-    principal_id                           = string
-    description                            = optional(string, null)
-    skip_service_principal_aad_check       = optional(bool, false)
-    condition                              = optional(string, null)
-    condition_version                      = optional(string, null)
-    delegated_managed_identity_resource_id = optional(string, null)
-    principal_type                         = optional(string, null)
+variable "georeplications" {
+  type = list(object({
+    location                  = string
+    regional_endpoint_enabled = optional(bool)
+    tags                      = optional(map(string))
+    zone_redundancy_enabled   = optional(bool)
   }))
-  default     = {}
-  description = <<DESCRIPTION
-A map of role assignments to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
+  default     = null
+  description = <<-EOT
+ - `location` - (Required) A location where the container registry should be geo-replicated.
+ - `regional_endpoint_enabled` - (Optional) Whether regional endpoint is enabled for this Container Registry?
+ - `tags` - (Optional) A mapping of tags to assign to this replication location.
+ - `zone_redundancy_enabled` - (Optional) Whether zone redundancy is enabled for this replication location? Defaults to `false`.
+EOT
 
-- `role_definition_id_or_name` - The ID or name of the role definition to assign to the principal.
-- `principal_id` - The ID of the principal to assign the role to.
-- `description` - The description of the role assignment.
-- `skip_service_principal_aad_check` - If set to true, skips the Azure Active Directory check for the service principal in the tenant. Defaults to false.
-- `condition` - The condition which will be used to scope the role assignment.
-- `condition_version` - The version of the condition syntax. Valid values are '2.0'.
-- `delegated_managed_identity_resource_id` - The delegated Azure Resource Id which contains a Managed Identity. Changing this forces a new resource to be created.
-- `principal_type` - The type of the principal_id. Possible values are `User`, `Group` and `ServicePrincipal`. Changing this forces a new resource to be created. It is necessary to explicitly set this attribute when creating role assignments if the principal creating the assignment is constrained by ABAC rules that filters on the PrincipalType attribute.
-
-> Note: only set `skip_service_principal_aad_check` to true if you are assigning a role to a service principal.
-DESCRIPTION
-  nullable    = false
+  validation {
+    condition = var.georeplications == null || alltrue([
+      for repl in var.georeplications :
+      can(regex("^[a-z0-9]+$", replace(lower(repl.location), " ", "")))
+    ])
+    error_message = "Each georeplication location must be a valid Azure region name."
+  }
+  validation {
+    condition = var.georeplications == null || length(var.georeplications) == 0 || !contains([
+      for repl in var.georeplications :
+      replace(lower(repl.location), " ", "")
+    ], replace(lower(var.location), " ", ""))
+    error_message = "The `georeplications` list cannot contain the location where the Container Registry exists."
+  }
+  validation {
+    condition = var.georeplications == null || length(var.georeplications) == length(distinct([
+      for repl in var.georeplications :
+      replace(lower(repl.location), " ", "")
+    ]))
+    error_message = "Each georeplication location must be unique within the `georeplications` list."
+  }
+  validation {
+    condition     = var.georeplications == null || length(var.georeplications) == 0 || var.sku == "Premium"
+    error_message = "An ACR geo-replication can only be applied when using the Premium Sku."
+  }
+  validation {
+    condition = var.georeplications == null || alltrue([
+      for repl in var.georeplications :
+      repl.zone_redundancy_enabled == null || !repl.zone_redundancy_enabled || var.sku == "Premium"
+    ])
+    error_message = "ACR zone redundancy can only be applied when using the Premium Sku."
+  }
 }
 
-# tflint-ignore: terraform_unused_declarations
+variable "identity" {
+  type = object({
+    identity_ids = optional(set(string))
+    type         = string
+  })
+  default     = null
+  description = <<-EOT
+ - `identity_ids` - (Optional) Specifies a list of User Assigned Managed Identity IDs to be assigned to this Container Registry.
+ - `type` - (Required) Specifies the type of Managed Service Identity that should be configured on this Container Registry. Possible values are `SystemAssigned`, `UserAssigned`, `SystemAssigned, UserAssigned` (to enable both).
+EOT
+
+  validation {
+    condition     = var.identity == null || contains(["SystemAssigned", "UserAssigned", "SystemAssigned, UserAssigned"], var.identity.type)
+    error_message = "identity.type must be one of: SystemAssigned, UserAssigned, SystemAssigned, UserAssigned"
+  }
+  validation {
+    condition = var.identity == null || (
+      (var.identity.identity_ids == null || length(var.identity.identity_ids) == 0) ||
+      (var.identity.type == "UserAssigned" || var.identity.type == "SystemAssigned, UserAssigned")
+    )
+    error_message = "`identity_ids` can only be specified when `type` is set to \"UserAssigned\" or \"SystemAssigned, UserAssigned\""
+  }
+}
+
+variable "network_rule_bypass_option" {
+  type        = string
+  default     = "AzureServices"
+  description = "(Optional) Whether to allow trusted Azure services to access a network-restricted Container Registry? Possible values are `None` and `AzureServices`. Defaults to `AzureServices`."
+  nullable    = false
+
+  validation {
+    condition     = contains(["AzureServices", "None"], var.network_rule_bypass_option)
+    error_message = "'network_rule_bypass_option' must be one of: AzureServices, None"
+  }
+}
+
+variable "network_rule_set" {
+  type = list(object({
+    default_action = optional(string, "Allow")
+    ip_rule = set(object({
+      action   = string
+      ip_range = string
+    }))
+  }))
+  default     = null
+  description = <<-EOT
+ - `default_action` - (Optional) The behaviour for requests matching no rules. Either `Allow` or `Deny`. Defaults to `Allow`
+
+ ---
+ `ip_rule` block supports the following:
+ - `action` - (Required) The behaviour for requests matching this rule. At this time the only supported value is `Allow`
+ - `ip_range` - (Required) The CIDR block from which requests will match the rule.
+EOT
+
+  validation {
+    condition     = var.network_rule_set == null || length(var.network_rule_set) == 0 || var.sku == "Premium"
+    error_message = "`network_rule_set` can only be specified for a Premium SKU. If you are reverting from a Premium to Basic SKU please set network_rule_set = []"
+  }
+  validation {
+    condition = var.network_rule_set == null || length(var.network_rule_set) == 0 || alltrue([
+      for nrs in var.network_rule_set :
+      contains(["Allow", "Deny"], nrs.default_action)
+    ])
+    error_message = "default_action must be one of: Allow, Deny"
+  }
+  validation {
+    condition = var.network_rule_set == null || length(var.network_rule_set) == 0 || alltrue([
+      for nrs in var.network_rule_set :
+      nrs.ip_rule == null || alltrue([
+        for rule in nrs.ip_rule :
+        rule.action == "Allow"
+      ])
+    ])
+    error_message = "ip_rule.action must be 'Allow' (only supported value at this time)"
+  }
+  validation {
+    condition = var.network_rule_set == null || length(var.network_rule_set) == 0 || alltrue([
+      for nrs in var.network_rule_set :
+      nrs.ip_rule == null || alltrue([
+        for rule in nrs.ip_rule :
+        can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}(/([0-9]|[1-2][0-9]|3[0-2]))?$", rule.ip_range))
+      ])
+    ])
+    error_message = "ip_rule.ip_range must start with IPv4 address and/or slash, number of bits (0-32) as prefix. Example: 127.0.0.1/8"
+  }
+}
+
+variable "public_network_access_enabled" {
+  type        = bool
+  default     = true
+  description = "(Optional) Whether public network access is allowed for the container registry. Defaults to `true`."
+  nullable    = false
+
+  validation {
+    condition     = var.public_network_access_enabled == true || var.sku == "Premium"
+    error_message = "`public_network_access_enabled` can only be disabled for a Premium Sku"
+  }
+}
+
+variable "quarantine_policy_enabled" {
+  type        = bool
+  default     = null
+  description = "(Optional) Boolean value that indicates whether quarantine policy is enabled."
+
+  validation {
+    condition     = var.quarantine_policy_enabled != true || var.sku == "Premium"
+    error_message = "an ACR quarantine policy can only be applied when using the Premium Sku. If you are downgrading from a Premium SKU please unset quarantine_policy_enabled"
+  }
+}
+
+variable "retention_policy_in_days" {
+  type        = number
+  default     = null
+  description = "(Optional) The number of days to retain and untagged manifest after which it gets purged."
+
+  validation {
+    condition     = var.retention_policy_in_days == null || (var.retention_policy_in_days >= 0 && var.retention_policy_in_days <= 365)
+    error_message = "'retention_policy_in_days' must be between 0 and 365 inclusive."
+  }
+  validation {
+    condition     = var.retention_policy_in_days == null || var.retention_policy_in_days == 0 || var.sku == "Premium"
+    error_message = "an ACR retention policy can only be applied when using the Premium Sku. If you are downgrading from a Premium SKU please unset `retention_policy_in_days`"
+  }
+}
+
 variable "tags" {
   type        = map(string)
   default     = null
-  description = "(Optional) Tags of the resource."
+  description = "(Optional) A mapping of tags to assign to the resource."
+}
+
+variable "timeouts" {
+  type = object({
+    create = optional(string, "30m")
+    delete = optional(string, "30m")
+    read   = optional(string, "5m")
+    update = optional(string, "30m")
+  })
+  default = {
+    create = "30m"
+    delete = "30m"
+    read   = "5m"
+    update = "30m"
+  }
+  description = <<-EOT
+ - `create` - (Optional) Specifies the timeout for create operations. Defaults to 30 minutes.
+ - `delete` - (Optional) Specifies the timeout for delete operations. Defaults to 30 minutes.
+ - `read` - (Optional) Specifies the timeout for read operations. Defaults to 5 minutes.
+ - `update` - (Optional) Specifies the timeout for update operations. Defaults to 30 minutes.
+EOT
+  nullable    = false
+}
+
+variable "trust_policy_enabled" {
+  type        = bool
+  default     = false
+  description = "(Optional) Boolean value that indicated whether trust policy is enabled. Defaults to `false`."
+  nullable    = false
+
+  validation {
+    condition     = !var.trust_policy_enabled || var.sku == "Premium"
+    error_message = "an ACR trust policy can only be applied when using the Premium Sku. If you are downgrading from a Premium SKU please unset `trust_policy_enabled` or set `trust_policy_enabled = false`"
+  }
+}
+
+variable "zone_redundancy_enabled" {
+  type        = bool
+  default     = false
+  description = "(Optional) Whether zone redundancy is enabled for this Container Registry? Changing this forces a new resource to be created. Defaults to `false`."
+  nullable    = false
+
+  validation {
+    condition     = !var.zone_redundancy_enabled || var.sku == "Premium"
+    error_message = "ACR zone redundancy can only be applied when using the Premium Sku"
+  }
 }

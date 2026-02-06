@@ -1,0 +1,4 @@
+moved {
+  from = azurerm_container_registry.test
+  to   = azapi_resource.this
+}

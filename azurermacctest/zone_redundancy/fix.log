@@ -1,0 +1,44 @@
+Test Case: zone_redundancy
+================================================================================
+
+Initial Error:
+Error: Attempt to get attribute from null value
+  on azapi.tf line 46, in resource "azapi_resource" "post_creation0":
+  46:   type           = module.replicator.post_creation0.azapi_header.type
+      ├────────────────
+      │ module.replicator.post_creation0 is null
+This value is null, so it does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The post_creation0 resource is null because no post-creation resources are needed for this test case (zone_redundancy only). The azapi.tf template unconditionally references post_creation0, causing errors when it's null.
+- Fix Method: Make the post_creation0 resource conditional by adding count parameter that checks if module.replicator.post_creation0 is not null
+- Changes Made: Added 'count = module.replicator.post_creation0 != null ? 1 : 0' to resource "azapi_resource" "post_creation0" block
+- Result: Running terraform plan to verify the fix...
+
+- Result: Fix successful! Terraform plan now completes without errors.
+
+Analysis of Drifts:
+The plan shows multiple drift changes in the body.properties section:
+1. anonymousPullEnabled: false -> null
+2. dataEndpointEnabled: false -> null
+3. encryption block removed
+4. networkRuleSet block removed
+5. policies subfields removed (azureADAuthenticationAsArmPolicy, quarantinePolicy, retentionPolicy, trustPolicy.type)
+6. roleAssignmentMode removed
+
+All these fields were NOT explicitly set in azurerm.tf (only sku and zone_redundancy_enabled were set).
+According to acceptable_drift_patterns.md Section 2: These are computed fields that were omitted in configuration.
+All drifts are ACCEPTABLE - they represent Azure API computed values that will be recalculated.
+
+Additionally, the following AzAPI-specific attribute changes are acceptable per Section 1:
+- ignore_null_property: false -> true
+- locks added
+- output changed
+- replace_triggers_external_values added
+- sensitive_body_version added
+- type API version changed
+- timeouts added
+
+Next step: Apply changes to verify idempotency after one-time update.

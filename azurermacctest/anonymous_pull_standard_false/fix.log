@@ -1,0 +1,25 @@
+Test Case: anonymous_pull_standard_false
+================================================================================
+
+Initial Error:
+Error: Attempt to get attribute from null value
+  on azapi.tf line 47, in resource "azapi_resource" "post_creation0":
+  47:   type           = module.replicator.post_creation0.azapi_header.type
+     ├────────────────
+     │ module.replicator.post_creation0 is null
+This value is null, so it does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The post_creation0 output from module.replicator is null (not needed for this configuration), but azapi.tf tries to use it unconditionally
+- Fix Method: Add count condition to check if post_creation0 is not null before creating the resource
+- Changes Made: Added 'count = module.replicator.post_creation0 != null ? 1 : 0' to resource "azapi_resource" "post_creation0"
+- Result: Success - Plan shows acceptable drifts only
+
+Drift Analysis:
+All detected drifts match acceptable patterns from acceptable_drift_patterns.md:
+1. Resource-level attributes (Section 1): ignore_null_property, locks, output, replace_triggers_external_values, sensitive_body_version, type, timeouts
+2. Body computed fields (Section 2): dataEndpointEnabled, encryption, policies.*, roleAssignmentMode - None of these were explicitly set in azurerm.tf
+
+Final Result: Fix successful

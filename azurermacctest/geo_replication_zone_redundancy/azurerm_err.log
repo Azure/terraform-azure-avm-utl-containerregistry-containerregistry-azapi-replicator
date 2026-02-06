@@ -1,0 +1,26 @@
+Test Case: geo_replication_zone_redundancy
+================================================================================
+
+Step 2 Failed - AzureRM Baseline Validation Failed
+
+Failed Command:
+terraform apply -auto-approve -input=false
+
+Error Message:
+Error: applying geo replications for Registry (Subscription: "f7a632a5-49db-4c5e-9828-cd62cb753971"
+Resource Group Name: "acctestRG-acr-490183"
+Registry Name: "testacccr490183"): creating Replication (Subscription: "f7a632a5-49db-4c5e-9828-cd62cb753971"
+Resource Group Name: "acctestRG-acr-490183"
+Registry Name: "testacccr490183"
+Replication Name: "westus"): performing Create: unexpected status 400 (400 Bad Request) with error: ZoneRedundancyNotSupported: Zone redundancy is not supported for the selected location westus. For more information on availability zone, please visit https://aka.ms/acr/az.
+
+Root Cause Analysis:
+The test case attempts to enable zone redundancy for a Container Registry geo-replication in the "westus" location. However, the Azure Container Registry service does not support zone redundancy in the "westus" region. This is a limitation of the Azure service itself, not a Terraform provider issue.
+
+The error occurs at the Azure API level when the AzureRM provider attempts to create the replication with zone_redundancy_enabled = true in an unsupported region.
+
+Conclusion:
+This test case is INVALID because it tests a configuration that is not supported by the underlying Azure service. The test case was likely created when zone redundancy was supported in westus or without verifying regional support. The test cannot pass with the current Azure service constraints.
+
+Recommendation:
+The test case should be updated to use a region that supports zone redundancy (e.g., eastus, westeurope, etc.) or the zone_redundancy_enabled flag should be set to false for the westus location.

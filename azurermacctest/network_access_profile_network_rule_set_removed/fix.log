@@ -1,0 +1,23 @@
+Test Case: network_access_profile_network_rule_set_removed
+================================================================================
+
+Initial Error:
+Error: Attempt to get attribute from null value
+  on azapi.tf line 47, in resource "azapi_resource" "post_creation0":
+  47:   type       = module.replicator.post_creation0.azapi_header.type
+    ├────────────────
+    │ module.replicator.post_creation0 is null
+
+This value is null, so it does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The post_creation0 output from the replicator module is null, but the resource block tries to access its attributes unconditionally. This appears to be a conditional resource that should only be created when post_creation0 is not null.
+- Fix Method: Add a count parameter to the azapi_resource.post_creation0 resource to make it conditional based on whether module.replicator.post_creation0 is null.
+- Changes Made: 
+  * Added `count = module.replicator.post_creation0 != null ? 1 : 0` to azapi_resource.post_creation0
+- Result: Success - Plan now runs without errors and shows acceptable drift only (all drifts are either AzAPI-level attributes or fields not explicitly set in azurerm.tf)
+
+Final Result: Fix successful
+

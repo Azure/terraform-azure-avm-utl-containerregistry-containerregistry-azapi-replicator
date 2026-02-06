@@ -1,0 +1,22 @@
+Test Case: complete_updated
+================================================================================
+
+Initial Error:
+identity_ids changing from list of identity IDs to null in plan output:
+  identity_ids = [
+      - "/subscriptions/.../userAssignedIdentities/testaccuai609533",
+    ] -> null
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The azapi.tf uses keys(identity.value.identity_ids) but identity_ids is a set, not a map. keys() fails on set and returns null.
+- Fix Method: Changed keys(identity.value.identity_ids) to 	olist(identity.value.identity_ids) to properly convert set to list
+- Changes Made: Line 54 in azapi.tf: identity_ids = try(tolist(identity.value.identity_ids), null)
+- Result: Pending verification
+
+- Result: SUCCESS - identity_ids now properly converted to list. Plan shows only acceptable drifts:
+  * ignore_null_property, locks, replace_triggers_external_values, sensitive_body_version, output, type, timeouts (AzAPI attributes)
+  * body changes for encryption, networkRuleSet, policies (Azure API defaults - not in azurerm.tf)
+
+Final Result: Fix successful

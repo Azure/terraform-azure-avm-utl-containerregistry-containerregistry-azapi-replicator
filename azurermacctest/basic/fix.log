@@ -1,0 +1,20 @@
+Test Case: basic
+================================================================================
+
+Initial Error:
+Error: Attempt to get attribute from null value
+
+  on azapi.tf line 46, in resource "azapi_resource" "post_creation0":
+  46:   type           = module.replicator.post_creation0.azapi_header.type
+    ├────────────────
+    │ module.replicator.post_creation0 is null
+
+This value is null, so it does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The post_creation0 resource in azapi.tf is unconditionally created, but module.replicator.post_creation0 is null when there are no georeplications. The module returns a list (or null), so the resource should use for_each to iterate over the list.
+- Fix Method: Changed from unconditional resource to for_each based resource that iterates over the post_creation0 list
+- Changes Made: Added for_each = module.replicator.post_creation0 != null ? { for idx, item in module.replicator.post_creation0 : idx => item } : {} and updated all attribute references to use each.value
+- Result: Success - terraform plan now runs without errors and shows drift

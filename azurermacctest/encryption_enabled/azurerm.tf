@@ -1,0 +1,18 @@
+resource "azurerm_container_registry" "test" {
+  name                = "testacccr${random_integer.number.result}"
+  resource_group_name = azurerm_resource_group.test.name
+  location            = azurerm_resource_group.test.location
+  sku                 = "Premium"
+
+  identity {
+    type = "UserAssigned"
+    identity_ids = [
+      azurerm_user_assigned_identity.test.id
+    ]
+  }
+
+  encryption {
+    identity_client_id = azurerm_user_assigned_identity.test.client_id
+    key_vault_key_id   = azurerm_key_vault_key.test.id
+  }
+}

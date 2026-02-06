@@ -1,0 +1,20 @@
+Test Case: basic_managed_premium
+================================================================================
+
+Initial Error:
+Error: Attempt to get attribute from null value
+  on azapi.tf line 46, in resource "azapi_resource" "post_creation0":
+  46:   type           = module.replicator.post_creation0.azapi_header.type
+    ├────────────────
+    │ module.replicator.post_creation0 is null
+This value is null, so it does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The module output post_creation0 is null for this configuration (basic Premium SKU without additional features), causing the azapi_resource block to fail when trying to access attributes of a null value
+- Fix Method: Add a conditional count to the post_creation0 resource block to only create it when the module output is not null
+- Changes Made: Added "count = module.replicator.post_creation0 != null ? 1 : 0" to the azapi_resource.post_creation0 block
+- Result: Success - plan now runs without errors
+
+Final Result: Fix successful - Now analyzing drift patterns

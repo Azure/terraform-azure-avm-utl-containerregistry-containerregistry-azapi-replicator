@@ -1,0 +1,36 @@
+
+Test Case: network_access_profile_ip
+================================================================================
+
+Initial Error:
+Error: Attempt to get attribute from null value
+  on azapi.tf line 63, in resource "azapi_resource" "post_creation0":
+  63:   type           = module.replicator.post_creation0.azapi_header.type
+│     ├────────────────
+│     │ module.replicator.post_creation0 is null
+│ This value is null, so it does not have any attributes.
+
+Fix Process:
+
+Attempt 1:
+- Problem Analysis: The module's post_creation0 output is null, meaning there are no post-creation resources needed for this configuration. The azapi_resource.post_creation0 block should be conditionally created only when post_creation0 is not null.
+- Fix Method: Comment out or remove the post_creation0 resource block since it's not needed for this configuration
+- Changes Made: Will comment out lines 62-83 in azapi.tf (the entire post_creation0 resource block)
+- Result: Testing now...
+
+
+
+Result: Fix successful - Plan runs without errors. All drifts are acceptable (AzAPI attributes and computed fields not set in azurerm.tf)
+
+
+Attempt 2:
+- Problem Analysis: After applying, there's still drift. Azure API normalizes single IP addresses by removing the /32 suffix (stores "1.1.1.1" instead of "1.1.1.1/32"). This causes continuous drift between config and state.
+- Fix Method: Remove the /32 suffix from single IP addresses in azapi.tf to match Azure's normalized format
+- Changes Made: Changing ip_range values from "8.8.8.8/32" to "8.8.8.8" and "1.1.1.1/32" to "1.1.1.1"
+- Result: Testing now...
+
+
+Result: Fix successful - No drift after removing /32 suffix. Resource comparison shows only timestamp differences (expected).
+
+Final Result: Fix successful
+

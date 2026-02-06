@@ -1,0 +1,1 @@
+# geo replication location example
